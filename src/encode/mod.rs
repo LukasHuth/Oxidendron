@@ -6,7 +6,11 @@ use std::{
 
 use crate::{
     Huffman,
-    tree::{DataHeader, EncodingData, EncodingTable, HuffmanTree},
+    utility::{
+        data_header::DataHeader,
+        encoding::{EncodingData, EncodingTable},
+        huffman_tree::HuffmanTree,
+    },
 };
 
 impl Huffman {

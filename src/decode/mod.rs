@@ -7,7 +7,9 @@ use byteorder::WriteBytesExt;
 
 use crate::{
     Huffman,
-    tree::{CURRENT_VERSION, DataHeader, DecodeTable, HuffmanTree},
+    utility::{
+        CURRENT_VERSION, data_header::DataHeader, decoding::DecodeTable, huffman_tree::HuffmanTree,
+    },
 };
 
 impl Huffman {

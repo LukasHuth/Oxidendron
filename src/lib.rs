@@ -1,7 +1,4 @@
-pub enum Huffman {
-    Encoded,
-    Decoded,
-}
+pub struct Huffman;
 mod decode;
 mod encode;
-mod tree;
+mod utility;
