@@ -146,11 +146,12 @@ fn test_encoding() {
      * bytes (lsb first):
      * 0101_0000 1_011_10_10 1_0011_000 100_011_11 10_110_10_0 ??????_00
      */
-    const OFFSET: usize = DataHeader::SIZE;
-    assert_eq!(result[OFFSET + 0], 0b1010_0000);
-    assert_eq!(result[OFFSET + 1], 0b0_110_01_01);
-    assert_eq!(result[OFFSET + 2], 0b1_1100_100);
-    assert_eq!(result[OFFSET + 3], 0b010_110_11);
-    assert_eq!(result[OFFSET + 4], 0b00_011_01_0);
-    assert_eq!(result[OFFSET + 5], 0b01);
+    // const OFFSET: usize = DataHeader::SIZE;
+    let offset: usize = result.len() - 6;
+    assert_eq!(result[offset + 0], 0b1010_0000);
+    assert_eq!(result[offset + 1], 0b0_110_01_01);
+    assert_eq!(result[offset + 2], 0b1_1100_100);
+    assert_eq!(result[offset + 3], 0b010_110_11);
+    assert_eq!(result[offset + 4], 0b00_011_01_0);
+    assert_eq!(result[offset + 5], 0b01);
 }

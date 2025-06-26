@@ -17,7 +17,7 @@ impl Huffman {
     where
         T: Write + Debug,
     {
-        let data_header = DataHeader::read_from(input);
+        let data_header = DataHeader::read_from(input).unwrap();
         if data_header.version != CURRENT_VERSION {
             panic!(
                 "File was created in an earlier version. Parsing of older versions is currently not supported"
@@ -25,7 +25,7 @@ impl Huffman {
         }
         let tree = HuffmanTree::generate(data_header.occurences);
         let lookup_table = DecodeTable::new(tree);
-        let input = &input[DataHeader::SIZE..];
+        let input = &input[data_header.size()..];
         let mut offset = 0;
         'byte_loop: for _ in 0..data_header.data_amount {
             for length in 1..=lookup_table.max_length {
