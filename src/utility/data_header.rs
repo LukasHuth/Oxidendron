@@ -1,4 +1,7 @@
-use std::{io::Write, ops::RangeInclusive};
+use std::{
+    io::{ErrorKind, Write},
+    ops::RangeInclusive,
+};
 
 use crate::utility::{CURRENT_VERSION, Occurences};
 
@@ -166,65 +169,34 @@ impl DataHeader {
 
     pub(crate) fn size(&self) -> usize {
         use std::mem::size_of;
-        let mut occ_type = OccurrenceType::new(self.occurences);
-        occ_type.convert_to_range_list();
-        size_of::<u8>() + size_of::<u64>() + occ_type.size()
+        match self.version {
+            0 => unreachable!("There is no version 0"),
+            1 => size_of::<u8>() + size_of::<u64>() * 256 + size_of::<u64>(),
+            2 => {
+                let mut occ_type = OccurrenceType::new(self.occurences);
+                occ_type.convert_to_range_list();
+                size_of::<u8>() + size_of::<u64>() + occ_type.size()
+            }
+            3.. => {
+                panic!("Encountered a newer version");
+            }
+        }
     }
     pub(crate) fn read_from(input: &[u8]) -> std::io::Result<Self> {
-        use byteorder::{BigEndian, ReadBytesExt};
-        use std::mem::size_of;
         let version = input[0];
-
-        let ranges_amount = input[1] as usize;
-        let input = &input[2..];
-        // read ranges
-        let mut ranges = Vec::new();
-        for i in 0..ranges_amount {
-            let start = (&input[size_of::<u8>() * 2 * i..]).read_u8()?;
-            let end = (&input[size_of::<u8>() * 2 * i + size_of::<u8>()..]).read_u8()?;
-            ranges.push(start..=end);
+        match version {
+            0 => Err(std::io::Error::new(
+                ErrorKind::InvalidData,
+                "Read an unexpected 0 as version",
+            )),
+            1 => Ok(read_v1_0::read_from(input)),
+            2 => read_v1_1::read_from(input),
+            3.. => Err(std::io::Error::new(
+                ErrorKind::InvalidData,
+                format!("Read a newer file version than supported: {version}"),
+            )),
         }
-        // adjust input to continue from 0
-        let input = &input[size_of::<u8>() * 2 * ranges_amount..];
-        // list amount can be calculated by suming all range lengths (inclusive ranges)
-        let list_amount = ranges
-            .iter()
-            .map(|range| *range.end() - *range.start() + 1)
-            .sum::<u8>() as usize;
-        // read list
-        let mut list = Vec::new();
-        for i in 0..list_amount {
-            list.push((&input[size_of::<u64>() * i..]).read_u64::<BigEndian>()?);
-        }
-        // adjust input to continue from 0
-        let input = &input[size_of::<u64>() * list_amount..];
-        // read positional data (list of single position, value pairs)
-        let positional_list_len = input[0] as usize;
-        let mut positional_list = Vec::new();
-        let input = &input[1..];
-        for i in 0..positional_list_len {
-            let offset = (size_of::<u8>() + size_of::<u64>()) * i;
-            let position = input[offset];
-            let value = (&input[offset + 1..]).read_u64::<BigEndian>()?;
-            positional_list.push((position, value));
-        }
-        // adjust input to continue from 0
-        let input = &input[(size_of::<u8>() + size_of::<u64>()) * positional_list_len..];
-        let data_amount = (&input[..]).read_u64::<BigEndian>()?;
-        let mut occ_type = OccurrenceType::RangeList {
-            ranges,
-            list,
-            positional_list,
-        };
-        occ_type.convert_to_full_list();
-        let occurences = match occ_type {
-            OccurrenceType::FullList { list } => list,
-            OccurrenceType::RangeList { .. } => unreachable!(),
-        };
-        Ok(Self {
-            version,
-            occurences,
-            data_amount,
-        })
     }
 }
+mod read_v1_0;
+mod read_v1_1;
